@@ -1,25 +1,41 @@
+
 require('dotenv').config();
 const express = require('express');
 
 const app = express();
 app.set('view engine', 'ejs');
 
-const { PORT = 4000, KUNNA_URL, TIME_START, TIME_END } = process.env;
-if (!KUNNA_URL) { console.error('Falta KUNNA_URL en .env'); process.exit(1); }
+const { PORT = 4000, KUNNA_URL, TOKEN, TIME_START, TIME_END } = process.env;
+if (!KUNNA_URL || !TOKEN) { console.error('Faltan KUNNA_URL o TOKEN en .env'); process.exit(1); }
 
 app.get('/', async (_req, res) => {
   try {
     const body = {
-      time_start: TIME_START,
-      time_end: TIME_END,
-      limit: 100,
-      count: false,
-      order: 'DESC'
+      time_range: {
+        start: TIME_START,
+        end: TIME_END
+      },
+      filters: [
+        {
+          field: 'magnitude',
+          values: ['electricityfacility']
+        },
+        {
+          field: 'device_id',
+          values: ['6339566']
+        }
+      ],
+      options: {
+        limit: 4000
+      }
     };
 
     const r = await fetch(KUNNA_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: {
+        'Content-Type': 'application/json',
+        'x-token-open-api': TOKEN
+      },
       body: JSON.stringify(body)
     });
 
@@ -27,11 +43,12 @@ app.get('/', async (_req, res) => {
 
     const json = await r.json();
 
-    const columns = json?.result?.columns ?? [];
-    const values = (json?.result?.values ?? []).slice(0, 5);
+    const records = json?.data?.records ?? [];
+    const columns = records.length > 0 ? Object.keys(records[0]) : [];
+    const values = records.slice(0, 5).map(row => columns.map(c => row[c]));
 
     res.render('index', { columns, values });
-    
+
   } catch (e) {
     console.error(e);
     res.status(500).send('Error obteniendo datos');
