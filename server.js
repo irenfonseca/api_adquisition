@@ -5,7 +5,7 @@ const express = require('express');
 const app = express();
 app.set('view engine', 'ejs');
 
-const { PORT = 4000, KUNNA_URL, TOKEN, TIME_START, TIME_END } = process.env;
+const { PORT = 4001, KUNNA_URL, TOKEN, TIME_START, TIME_END } = process.env;
 if (!KUNNA_URL || !TOKEN) { console.error('Faltan KUNNA_URL o TOKEN en .env'); process.exit(1); }
 
 app.get('/', async (_req, res) => {
